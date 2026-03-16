@@ -1,8 +1,10 @@
+let gStartX = 0, gStartY = 0, gWidth = 0, gHeight = 0;
+let gObserver = null;
+
 // On page load, check if we were already watching something
 chrome.storage.local.get(["watchedSelector", "watchedTabId"], ({ watchedSelector, watchedTabId }) => {
     if (!watchedSelector || !watchedTabId) return;
 
-    // Ask background for our own tab id, then compare
     chrome.runtime.sendMessage({ action: "getTabId" }, (response) => {
         if (!response || response.tabId !== watchedTabId) return;
 
@@ -11,7 +13,7 @@ chrome.storage.local.get(["watchedSelector", "watchedTabId"], ({ watchedSelector
             const el = document.querySelector(watchedSelector);
             if (el) {
                 highlightElement(el);
-                watchElement(el);
+                gObserver = watchElement(el);
             } else {
                 setTimeout(tryReattach, 500);
             }
@@ -19,7 +21,6 @@ chrome.storage.local.get(["watchedSelector", "watchedTabId"], ({ watchedSelector
         tryReattach();
     });
 });
-let gStartX = 0, gStartY = 0, gWidth = 0, gHeight = 0;
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "startDrawing") {
@@ -27,7 +28,6 @@ chrome.runtime.onMessage.addListener((message) => {
     }
 });
 
-// --- HUD ---
 function showHUD() {
     if (document.getElementById("domWatcherHUD")) return;
 
@@ -76,9 +76,13 @@ function showHUD() {
         color: #444; cursor: pointer;
     `;
     clearBtn.addEventListener("click", () => {
+        if (gObserver) {
+            gObserver.disconnect();
+            gObserver = null;
+        }
         chrome.storage.local.remove("watchedSelector");
+        chrome.storage.local.remove("watchedTabId");
         chrome.runtime.sendMessage({ action: "stopSound" });
-        // Remove highlight from any watched element
         document.querySelectorAll("*").forEach(el => {
             if (el.style.outline === "3px solid red") {
                 el.style.outline = "";
@@ -93,8 +97,6 @@ function showHUD() {
     hud.appendChild(clearBtn);
     document.body.appendChild(hud);
 }
-
-// --- rest of your existing code, unchanged ---
 
 function drawBox() {
     const overlay = document.createElement("div");
@@ -187,11 +189,17 @@ function detectElement() {
     }
 
     const selector = getSelectorPath(target);
-    chrome.storage.local.set({ watchedSelector: selector });
+
+    chrome.runtime.sendMessage({ action: "getTabId" }, (response) => {
+        chrome.storage.local.set({
+            watchedSelector: selector,
+            watchedTabId: response.tabId
+        });
+    });
 
     highlightElement(target);
-    watchElement(target);
-    showHUD(); // <-- show HUD after box is drawn
+    gObserver = watchElement(target);
+    showHUD();
 }
 
 function findLargestElementInBox(x, y, width, height) {
@@ -218,6 +226,14 @@ function highlightElement(el) {
 function watchElement(el) {
     const observer = new MutationObserver(() => {
         chrome.runtime.sendMessage({ action: "playSound" });
+        setTimeout(() => {
+            chrome.runtime.sendMessage({ action: "stopSound" });
+        }, 15000);
     });
-    observer.observe(el, { childList: true, subtree: true, characterData: true });
+
+    setTimeout(() => {
+        observer.observe(el, { childList: true, subtree: true, characterData: true });
+    }, 500);
+
+    return observer;
 }
