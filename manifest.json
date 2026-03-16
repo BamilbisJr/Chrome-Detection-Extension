@@ -1,0 +1,26 @@
+{
+    "manifest_version": 3,
+    "name": "Opentime Monitor",
+    "version": "1.0",
+    "description": "Select a box on a page and get alerts when its content changes",
+    "permissions": ["activeTab", "scripting", "tabs", "offscreen", "storage"],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "DOM Box Watcher"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["aviation-alarm.mp3"],
+            "matches": ["<all_urls>"]
+        }
+    ],
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"]
+        }
+    ]
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<title>DOM Box Watcher</title>
+<style>
+    body { font-family: sans-serif; width: 200px; padding: 10px; }
+    button { width: 100%; padding: 8px; margin-top: 5px; }
+    button:hover { background-color: #2ecc71; }
+</style>
+
+</head>
+
+<body>
+
+<body>
+    <button onclick="drawBox()">ACTIVATE POWER</button>
+    <button onclick="document.getElementById('target').innerText='NEW DATA!'">
+        Populate Box
+    </button>
+    <div id="target" style="margin-top:20px; padding:20px; border:1px solid black;">
+        (empty)
+    </div>
+
+    <script src="script.js"></script> <!-- JS at bottom -->
+
+</body>
+</html>
