@@ -224,9 +224,15 @@ function highlightElement(el) {
 }
 
 function watchElement(el) {
-    const observer = new MutationObserver(() => {
+    let autoStopTimer = null;
+
+    const observer = new MutationObserver((mutations) => {
+        const hadAddedNodes = mutations.some(m => m.addedNodes.length > 0);
+        if (!hadAddedNodes) return;
+
         chrome.runtime.sendMessage({ action: "playSound" });
-        setTimeout(() => {
+        clearTimeout(autoStopTimer);
+        autoStopTimer = setTimeout(() => {
             chrome.runtime.sendMessage({ action: "stopSound" });
         }, 15000);
     });
